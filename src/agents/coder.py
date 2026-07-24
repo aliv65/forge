@@ -1,8 +1,7 @@
 """
 Coding Agent.
 
-Третий этап Forge pipeline.
-Создает результат реализации на основе архитектурного решения.
+Формирует реализацию на основе архитектурного решения.
 """
 
 from agents.base import BaseAgent, AgentResult
@@ -11,84 +10,88 @@ from orchestrator.context import ExecutionContext
 
 class CodingAgent(BaseAgent):
     """
-    Агент реализации.
+    Coding Agent.
 
     Ответственность:
-    - реализовать утвержденное решение;
-    - описать изменения;
-    - подготовить результат для проверки.
+    - реализовать архитектурное решение;
+    - сформировать описание изменений;
+    - подготовить артефакт реализации.
 
     Не отвечает за:
-    - архитектурные решения;
+    - архитектуру;
     - ревью;
     - тестирование.
     """
 
     name = "coding-agent"
 
+    PROMPT_TEMPLATE = """
+Ты Senior Software Engineer.
+
+На основе архитектурного решения подготовь реализацию.
+
+Архитектурное решение:
+
+{architecture}
+
+Верни:
+
+1. Краткое описание реализации.
+2. Какие компоненты необходимо изменить.
+3. Какие файлы будут созданы или изменены.
+4. Возможные технические риски.
+"""
+
     def execute(
         self,
         context: ExecutionContext
     ) -> AgentResult:
         """
-        Создает результат реализации.
+        Формирует реализацию.
         """
 
-        if not self.validate_context(context):
-            return self.create_error_result(
-                "Invalid execution context"
-            )
-
-        architecture_decision = context.get_result(
+        architecture = context.get_result(
             "architect-agent"
         )
 
-        if architecture_decision is None:
-            return self.create_error_result(
-                "Architecture decision not found"
+        if architecture is None:
+            return AgentResult.fail(
+                "Architecture decision not found."
             )
 
+        prompt = self.PROMPT_TEMPLATE.format(
+            architecture=architecture["summary"]
+        )
+
+        llm_response = self.ask_llm(
+            prompt=prompt,
+            context={
+                "task_id": context.task.id
+            }
+        )
+
         implementation = {
-            "id": "IMPL-001",
+            "id": f"IMPL-{context.task.id}",
             "task_id": context.task.id,
-            "architecture_decision_id": (
-                architecture_decision["id"]
-            ),
             "status": "completed",
-            "summary": (
-                "Реализация выполнена "
-                "в соответствии с архитектурным решением."
-            ),
+            "summary": llm_response,
+            "used_components": architecture["components"],
             "changed_files": [
                 {
-                    "path": "src/example.py",
-                    "change_type": "created",
-                    "description": (
-                        "Создан демонстрационный "
-                        "компонент реализации."
-                    )
+                    "path": "src/report/pdf_export.py",
+                    "action": "create"
+                },
+                {
+                    "path": "src/report/service.py",
+                    "action": "modify"
                 }
             ],
-            "implementation_details": [
-                "Использован существующий pipeline Forge",
-                "Данные передаются через ExecutionContext"
-            ],
-            "used_components": [
-                "orchestrator",
-                "agents",
-                "models"
-            ],
-            "limitations": [
-                "Генерация реального кода "
-                "будет добавлена через Provider"
+            "technical_risks": [
+                "Необходимо контролировать размер PDF.",
+                "Следует обработать ошибки генерации документа."
             ]
         }
 
-        context.add_result(
-            self.name,
-            implementation
-        )
-
-        return self.create_success_result(
+        return AgentResult.ok(
             implementation
         )
