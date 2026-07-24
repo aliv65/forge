@@ -1,133 +1,123 @@
 """
 Release Agent.
 
-Финальный этап Forge pipeline.
-Формирует итоговый пакет результата выполнения задачи.
+Формирует итоговый пакет релиза на основе
+всех предыдущих артефактов.
 """
 
-from agents.base import BaseAgent, AgentResult
+from agents.base import AgentResult, BaseAgent
 from orchestrator.context import ExecutionContext
 
 
 class ReleaseAgent(BaseAgent):
     """
-    Агент подготовки релиза.
+    Release Agent.
 
     Ответственность:
-    - собрать результаты pipeline;
-    - определить готовность результата;
+    - проверить готовность к релизу;
+    - собрать все артефакты;
     - сформировать Release Package.
 
     Не отвечает за:
-    - изменение кода;
-    - исправление ошибок;
-    - повторную проверку.
+    - разработку;
+    - тестирование;
+    - архитектуру.
     """
 
     name = "release-agent"
+
+    PROMPT_TEMPLATE = """
+Ты Release Manager.
+
+На основе результатов предыдущих этапов
+подготовь краткое описание релиза.
+
+Верни:
+
+1. Краткое описание релиза.
+2. Основные изменения.
+3. Возможные ограничения.
+"""
 
     def execute(
         self,
         context: ExecutionContext
     ) -> AgentResult:
         """
-        Формирует итоговый пакет релиза.
+        Формирует пакет релиза.
         """
 
-        if not self.validate_context(context):
-            return self.create_error_result(
-                "Invalid execution context"
-            )
+        specification = context.get_result(
+            "product-agent"
+        )
+
+        architecture = context.get_result(
+            "architect-agent"
+        )
 
         implementation = context.get_result(
             "coding-agent"
         )
 
-        review_report = context.get_result(
+        review = context.get_result(
             "review-agent"
         )
 
-        test_suite = context.get_result(
+        tests = context.get_result(
             "testing-agent"
         )
 
-        architecture_decision = context.get_result(
-            "architect-agent"
-        )
-
-        required_results = [
-            implementation,
-            review_report,
-            test_suite,
-            architecture_decision
-        ]
-
-        if any(
-            result is None
-            for result in required_results
-        ):
-            return self.create_error_result(
-                "Pipeline results are incomplete"
+        if specification is None:
+            return AgentResult.fail(
+                "Specification not found."
             )
 
-        is_ready = (
-            review_report["status"] == "approved"
-            and test_suite["status"] == "passed"
+        if architecture is None:
+            return AgentResult.fail(
+                "Architecture decision not found."
+            )
+
+        if implementation is None:
+            return AgentResult.fail(
+                "Implementation not found."
+            )
+
+        if review is None:
+            return AgentResult.fail(
+                "Review report not found."
+            )
+
+        if tests is None:
+            return AgentResult.fail(
+                "Test suite not found."
+            )
+
+        if not tests.get("release_ready", False):
+            return AgentResult.fail(
+                "Release is not approved."
+            )
+
+        prompt = self.PROMPT_TEMPLATE.format()
+
+        summary = self.ask_llm(
+            prompt=prompt,
+            context={
+                "task_id": context.task.id
+            }
         )
 
         release_package = {
-            "id": "RELEASE-001",
+            "id": f"RELEASE-{context.task.id}",
             "task_id": context.task.id,
-            "status": (
-                "ready"
-                if is_ready
-                else "blocked"
-            ),
-            "summary": (
-                "Результат задачи подготовлен "
-                "к передаче."
-            ),
-            "changes": {
-                "description": (
-                    implementation["summary"]
-                ),
-                "affected_components": (
-                    implementation["used_components"]
-                ),
-                "changed_files": [
-                    file["path"]
-                    for file in implementation[
-                        "changed_files"
-                    ]
-                ]
-            },
-            "validation": {
-                "review_status": (
-                    review_report["status"]
-                ),
-                "test_status": (
-                    test_suite["status"]
-                ),
-                "checks_passed": is_ready,
-                "issues": (
-                    test_suite["issues"]
-                )
-            },
-            "architecture_decisions": [
-                architecture_decision["id"]
-            ],
-            "memory_updates": [],
-            "release_notes": (
-                "Демонстрационный релиз "
-                "Forge pipeline."
-            )
+            "status": "ready",
+            "summary": summary,
+            "specification": specification,
+            "architecture": architecture,
+            "implementation": implementation,
+            "review": review,
+            "tests": tests
         }
 
-        context.add_result(
-            self.name,
-            release_package
-        )
-
-        return self.create_success_result(
+        return AgentResult.ok(
             release_package
         )
