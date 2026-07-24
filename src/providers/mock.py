@@ -83,18 +83,18 @@ class MockProvider(BaseProvider):
                 "System boundaries defined."
             )
 
-        if "senior software engineer" in prompt_lower:
-
-            return (
-                "Implementation plan generated. "
-                "Required code changes identified."
-            )
-
         if "code review" in prompt_lower:
 
             return (
                 "Code review completed. "
                 "Implementation quality accepted."
+            )
+
+        if "senior software engineer" in prompt_lower:
+
+            return (
+                "Implementation plan generated. "
+                "Required code changes identified."
             )
 
         if "qa engineer" in prompt_lower:
