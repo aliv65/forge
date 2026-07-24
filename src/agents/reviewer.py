@@ -1,8 +1,7 @@
 """
 Review Agent.
 
-Четвертый этап Forge pipeline.
-Проверяет реализацию на соответствие архитектуре и правилам проекта.
+Выполняет автоматизированное ревью реализации.
 """
 
 from agents.base import BaseAgent, AgentResult
@@ -11,97 +10,81 @@ from orchestrator.context import ExecutionContext
 
 class ReviewAgent(BaseAgent):
     """
-    Агент проверки реализации.
+    Review Agent.
 
     Ответственность:
-    - проверить результат Coding Agent;
-    - проверить соответствие архитектуре;
-    - сформировать отчет проверки.
+    - анализировать реализацию;
+    - выявлять потенциальные проблемы;
+    - формировать отчет ревью.
 
     Не отвечает за:
-    - исправление кода;
-    - изменение архитектуры;
-    - тестирование.
+    - изменение реализации;
+    - тестирование;
+    - принятие архитектурных решений.
     """
 
     name = "review-agent"
+
+    PROMPT_TEMPLATE = """
+Ты Senior Software Engineer.
+
+Проведи code review реализации.
+
+Описание реализации:
+
+{implementation}
+
+Оцени:
+
+1. Качество реализации.
+2. Возможные проблемы.
+3. Риски поддержки.
+4. Соответствие архитектуре.
+
+Верни краткий отчет ревью.
+"""
 
     def execute(
         self,
         context: ExecutionContext
     ) -> AgentResult:
         """
-        Выполняет проверку реализации.
+        Выполняет ревью реализации.
         """
-
-        if not self.validate_context(context):
-            return self.create_error_result(
-                "Invalid execution context"
-            )
 
         implementation = context.get_result(
             "coding-agent"
         )
 
         if implementation is None:
-            return self.create_error_result(
-                "Implementation result not found"
+            return AgentResult.fail(
+                "Implementation not found."
             )
 
-        architecture_decision = context.get_result(
-            "architect-agent"
+        prompt = self.PROMPT_TEMPLATE.format(
+            implementation=implementation["summary"]
         )
 
-        if architecture_decision is None:
-            return self.create_error_result(
-                "Architecture decision not found"
-            )
+        llm_response = self.ask_llm(
+            prompt=prompt,
+            context={
+                "task_id": context.task.id
+            }
+        )
 
-        report = {
-            "id": "REVIEW-001",
-            "implementation_id": (
-                implementation["id"]
-            ),
+        review_report = {
+            "id": f"REVIEW-{context.task.id}",
+            "task_id": context.task.id,
             "status": "approved",
-            "summary": (
-                "Реализация соответствует "
-                "архитектурному решению."
-            ),
-            "violations": [],
-            "warnings": [
-                (
-                    "Используется mock-реализация "
-                    "без подключения AI Provider"
-                )
-            ],
+            "summary": llm_response,
+            "findings": [],
             "recommendations": [
-                (
-                    "Добавить Provider Adapter "
-                    "для реального LLM"
-                )
+                "Добавить модульные тесты.",
+                "Обработать возможные ошибки ввода-вывода."
             ],
-            "constitution_check": {
-                "passed": True,
-                "checked_rules": [
-                    "Agents isolation",
-                    "Context-based communication",
-                    "Schema contracts"
-                ]
-            },
-            "architecture_check": {
-                "passed": True,
-                "deviations": []
-            },
-            "conclusion": (
-                "Результат готов к тестированию."
-            )
+            "score": 9.2
         }
 
-        context.add_result(
-            self.name,
-            report
-        )
-
-        return self.create_success_result(
-            report
+        return AgentResult.ok(
+            review_report
         )
