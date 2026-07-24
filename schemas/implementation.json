@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Forge Implementation",
+  "description": "Контракт результата реализации, создаваемого Coding Agent и передаваемого Review Agent.",
+  "type": "object",
+  "required": [
+    "id",
+    "task_id",
+    "architecture_decision_id",
+    "status",
+    "summary",
+    "changed_files",
+    "implementation_details",
+    "limitations"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Уникальный идентификатор реализации.",
+      "examples": [
+        "IMPL-001"
+      ]
+    },
+    "task_id": {
+      "type": "string",
+      "description": "Идентификатор исходной задачи."
+    },
+    "architecture_decision_id": {
+      "type": "string",
+      "description": "Идентификатор архитектурного решения, на основании которого выполнена реализация."
+    },
+    "status": {
+      "type": "string",
+      "description": "Статус выполнения реализации.",
+      "enum": [
+        "completed",
+        "blocked",
+        "failed"
+      ]
+    },
+    "summary": {
+      "type": "string",
+      "description": "Краткое описание выполненной реализации."
+    },
+    "changed_files": {
+      "type": "array",
+      "description": "Список измененных или добавленных файлов.",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "change_type",
+          "description"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "Путь к измененному файлу."
+          },
+          "change_type": {
+            "type": "string",
+            "description": "Тип изменения.",
+            "enum": [
+              "created",
+              "modified",
+              "deleted"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "description": "Описание изменения файла."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "implementation_details": {
+      "type": "array",
+      "description": "Описание основных деталей реализации.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "used_components": {
+      "type": "array",
+      "description": "Список компонентов системы, использованных при реализации.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "description": "Известные ограничения текущей реализации.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Дополнительная информация о реализации.",
+      "properties": {
+        "created_at": {
+          "type": "string",
+          "description": "Дата создания реализации."
+        },
+        "agent_version": {
+          "type": "string",
+          "description": "Версия Coding Agent."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
