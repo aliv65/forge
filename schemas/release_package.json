@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Forge Release Package",
+  "description": "Контракт итогового результата выполнения задачи, создаваемого Release Agent.",
+  "type": "object",
+  "required": [
+    "id",
+    "task_id",
+    "status",
+    "summary",
+    "changes",
+    "validation",
+    "architecture_decisions"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Уникальный идентификатор релизного пакета.",
+      "examples": [
+        "RELEASE-001"
+      ]
+    },
+    "task_id": {
+      "type": "string",
+      "description": "Идентификатор исходной задачи."
+    },
+    "status": {
+      "type": "string",
+      "description": "Итоговый статус релиза.",
+      "enum": [
+        "ready",
+        "blocked",
+        "rejected"
+      ]
+    },
+    "summary": {
+      "type": "string",
+      "description": "Краткое описание результата выполнения задачи."
+    },
+    "changes": {
+      "type": "object",
+      "description": "Информация об изменениях, вошедших в релиз.",
+      "required": [
+        "description",
+        "affected_components",
+        "changed_files"
+      ],
+      "properties": {
+        "description": {
+          "type": "string",
+          "description": "Описание реализованных изменений."
+        },
+        "affected_components": {
+          "type": "array",
+          "description": "Компоненты системы, затронутые изменениями.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "changed_files": {
+          "type": "array",
+          "description": "Список файлов, измененных в рамках задачи.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "validation": {
+      "type": "object",
+      "description": "Результаты проверки качества и тестирования.",
+      "required": [
+        "review_status",
+        "test_status",
+        "checks_passed"
+      ],
+      "properties": {
+        "review_status": {
+          "type": "string",
+          "description": "Статус проверки Review Agent.",
+          "enum": [
+            "approved",
+            "changes_requested",
+            "rejected"
+          ]
+        },
+        "test_status": {
+          "type": "string",
+          "description": "Статус проверки Testing Agent.",
+          "enum": [
+            "passed",
+            "failed",
+            "blocked"
+          ]
+        },
+        "checks_passed": {
+          "type": "boolean",
+          "description": "Пройдены ли все обязательные проверки."
+        },
+        "issues": {
+          "type": "array",
+          "description": "Открытые проблемы, влияющие на готовность релиза.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "architecture_decisions": {
+      "type": "array",
+      "description": "Архитектурные решения, связанные с изменением.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "memory_updates": {
+      "type": "array",
+      "description": "Изменения, которые должны быть сохранены в Architecture Memory.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "release_notes": {
+      "type": "string",
+      "description": "Описание изменений для конечного пользователя или команды."
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Дополнительная информация о релизе.",
+      "properties": {
+        "created_at": {
+          "type": "string",
+          "description": "Дата формирования релизного пакета."
+        },
+        "agent_version": {
+          "type": "string",
+          "description": "Версия Release Agent."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
