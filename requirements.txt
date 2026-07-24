@@ -1,0 +1,5 @@
+# Работа с YAML
+PyYAML>=6.0
+
+# Проверка JSON Schema
+jsonschema>=4.25.0
