@@ -1,62 +1,110 @@
 """
-Forge MVP entry point.
+Forge.
 
-Запускает процесс обработки инженерной задачи через Orchestrator.
+Точка входа в приложение.
 """
 
-from orchestrator.engine import Orchestrator
-from orchestrator.context import ExecutionContext
-
 from models.task import Task
+from orchestrator.context import ExecutionContext
+from orchestrator.engine import Orchestrator
 
 
 def create_demo_task() -> Task:
     """
-    Создает демонстрационную задачу для проверки pipeline.
+    Создает демонстрационную задачу.
     """
 
     return Task(
         id="TASK-001",
-        title="Добавить поддержку нового отчета",
+        title="Добавить экспорт отчета в PDF",
         description=(
-            "Создать новый тип отчета в системе "
-            "с возможностью формирования итоговых данных."
+            "Пользователь должен иметь возможность "
+            "экспортировать сформированный отчет в PDF."
         ),
         requirements=[
-            "Пользователь может создать отчет",
-            "Отчет содержит необходимые данные",
-            "Результат доступен после выполнения операции"
+            "Добавить кнопку экспорта",
+            "Сгенерировать PDF",
+            "Скачать файл пользователю"
         ],
         constraints=[
-            "Не изменять существующую архитектуру",
-            "Соблюдать правила Constitution"
+            "Использовать существующую архитектуру",
+            "Не нарушать API"
         ],
         acceptance_criteria=[
-            "Отчет успешно создается",
-            "Данные отчета корректно отображаются"
+            "PDF успешно создается",
+            "Файл скачивается",
+            "Ошибки отображаются пользователю"
         ],
         open_questions=[]
     )
 
 
+def print_header() -> None:
+    """
+    Печатает заголовок приложения.
+    """
+
+    print("=" * 60)
+    print("Forge")
+    print("AI-First Engineering Orchestrator")
+    print("=" * 60)
+    print()
+
+
+def print_summary(result: dict) -> None:
+    """
+    Печатает итог выполнения.
+    """
+
+    print()
+    print("=" * 60)
+
+    if result["status"] == "completed":
+
+        print("Pipeline completed successfully")
+
+        release = result["release"]
+
+        print(f"Release ID : {release['id']}")
+        print(f"Status     : {release['status']}")
+        print(f"Task       : {release['task_id']}")
+
+    else:
+
+        print("Pipeline failed")
+
+        print(f"Stage : {result['stage']}")
+        print(f"Error : {result['error']}")
+
+    print("=" * 60)
+
+
 def main() -> None:
     """
-    Основной сценарий запуска Forge.
+    Запускает демонстрационный pipeline.
     """
+
+    print_header()
 
     task = create_demo_task()
 
-    context = ExecutionContext(
-        task=task
-    )
+    print(f"Task: {task.title}")
+    print()
+
+    context = ExecutionContext(task)
 
     orchestrator = Orchestrator()
 
     result = orchestrator.run(context)
 
-    print("Forge execution completed")
-    print("------------------------")
-    print(result)
+    print()
+
+    print("Pipeline:")
+
+    for stage in context.results.keys():
+        print(f"  ✓ {stage}")
+
+    print_summary(result)
 
 
 if __name__ == "__main__":
