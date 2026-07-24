@@ -7,19 +7,12 @@ Mock Provider.
 
 from __future__ import annotations
 
-from providers.base import BaseProvider
+from typing import Any
 
-
-class MockResponse:
-    """
-    Ответ Mock Provider.
-    """
-
-    def __init__(
-        self,
-        content: str
-    ) -> None:
-        self.content = content
+from providers.base import (
+    BaseProvider,
+    ProviderResponse
+)
 
 
 class MockProvider(BaseProvider):
@@ -40,10 +33,10 @@ class MockProvider(BaseProvider):
     def generate(
         self,
         prompt: str,
-        context: dict | None = None
-    ) -> MockResponse:
+        context: dict[str, Any] | None = None
+    ) -> ProviderResponse:
         """
-        Генерирует предсказуемый ответ.
+        Генерирует ответ модели.
         """
 
         self.calls.append(
@@ -54,8 +47,13 @@ class MockProvider(BaseProvider):
             prompt
         )
 
-        return MockResponse(
-            response
+        return ProviderResponse(
+            content=response,
+            metadata={
+                "provider": self.name,
+                "mode": "mock",
+                "context": context or {}
+            }
         )
 
     def _generate_response(
@@ -63,7 +61,10 @@ class MockProvider(BaseProvider):
         prompt: str
     ) -> str:
         """
-        Формирует демонстрационный ответ.
+        Создает детерминированный ответ.
+
+        В реальном Provider здесь был бы
+        вызов LLM API.
         """
 
         prompt_lower = prompt.lower()
@@ -79,14 +80,14 @@ class MockProvider(BaseProvider):
 
             return (
                 "Architecture decision generated. "
-                "Components and boundaries defined."
+                "System boundaries defined."
             )
 
         if "senior software engineer" in prompt_lower:
 
             return (
                 "Implementation plan generated. "
-                "Required changes identified."
+                "Required code changes identified."
             )
 
         if "code review" in prompt_lower:
@@ -107,7 +108,7 @@ class MockProvider(BaseProvider):
 
             return (
                 "Release package prepared. "
-                "All stages completed."
+                "All pipeline stages completed."
             )
 
         return (
@@ -127,7 +128,9 @@ class MockProvider(BaseProvider):
         self
     ) -> int:
         """
-        Возвращает количество обращений.
+        Возвращает количество запросов.
         """
 
-        return len(self.calls)
+        return len(
+            self.calls
+        )
