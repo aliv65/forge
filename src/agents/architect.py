@@ -1,8 +1,8 @@
 """
-Architecture Agent.
+Architect Agent.
 
-Второй этап Forge pipeline.
-Формирует архитектурное решение на основе задачи.
+Формирует архитектурное решение (ADR) на основе
+спецификации Product Agent.
 """
 
 from agents.base import BaseAgent, AgentResult
@@ -11,20 +11,32 @@ from orchestrator.context import ExecutionContext
 
 class ArchitectAgent(BaseAgent):
     """
-    Агент архитектурного проектирования.
+    Architect Agent.
 
     Ответственность:
-    - анализировать требования;
-    - учитывать ограничения;
-    - формировать архитектурное решение.
-
-    Не отвечает за:
-    - написание кода;
-    - тестирование;
-    - релиз.
+    - анализировать спецификацию;
+    - выбирать архитектурный подход;
+    - фиксировать архитектурное решение.
     """
 
     name = "architect-agent"
+
+    PROMPT_TEMPLATE = """
+Ты системный архитектор.
+
+На основе спецификации подготовь архитектурное решение.
+
+Спецификация:
+
+{specification}
+
+Верни:
+
+1. Краткое описание архитектуры.
+2. Основные компоненты.
+3. Архитектурные ограничения.
+4. Причины выбора решения.
+"""
 
     def execute(
         self,
@@ -34,60 +46,39 @@ class ArchitectAgent(BaseAgent):
         Создает архитектурное решение.
         """
 
-        if not self.validate_context(context):
-            return self.create_error_result(
-                "Invalid execution context"
-            )
-
-        product_result = context.get_result(
+        specification = context.get_result(
             "product-agent"
         )
 
-        if product_result is None:
-            return self.create_error_result(
-                "Product analysis result not found"
+        if specification is None:
+            return AgentResult.fail(
+                "Product specification not found."
             )
 
-        decision = {
-            "id": "ADR-001",
-            "title": (
-                "Implementation based on "
-                "existing Forge pipeline"
-            ),
-            "status": "accepted",
-            "summary": (
-                "Реализация выполняется через "
-                "существующий pipeline агентов "
-                "с передачей данных через ExecutionContext."
-            ),
-            "affected_components": [
-                "orchestrator",
-                "agents",
-                "models"
-            ],
-            "changes": [
-                "Создать необходимый компонент",
-                "Использовать существующие контракты"
-            ],
-            "rationale": (
-                "Решение сохраняет слабую связанность "
-                "между агентами и соответствует "
-                "архитектуре Forge."
-            ),
-            "risks": [
-                "Недостаток информации при сложных задачах"
-            ],
-            "constitution_check": {
-                "passed": True,
-                "violations": []
-            }
-        }
-
-        context.add_result(
-            self.name,
-            decision
+        prompt = self.PROMPT_TEMPLATE.format(
+            specification=specification["summary"]
         )
 
-        return self.create_success_result(
-            decision
+        llm_response = self.ask_llm(
+            prompt=prompt,
+            context={
+                "task_id": context.task.id
+            }
+        )
+
+        architecture_decision = {
+            "id": f"ADR-{context.task.id}",
+            "task_id": context.task.id,
+            "summary": llm_response,
+            "components": [
+                "API",
+                "Application Layer",
+                "Persistence Layer"
+            ],
+            "constraints": specification["constraints"],
+            "status": "accepted"
+        }
+
+        return AgentResult.ok(
+            architecture_decision
         )
