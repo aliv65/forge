@@ -1,172 +1,159 @@
 """
 Forge Logger.
 
-Единый журнал событий выполнения pipeline.
+Централизованное логирование событий системы.
 """
 
-from datetime import datetime
-from pathlib import Path
-from typing import Any, Dict
+from __future__ import annotations
+
 import json
+import logging
+
+from datetime import datetime
+
+from pathlib import Path
+
+from typing import Any
 
 
 class ForgeLogger:
     """
-    Логирование событий Forge.
+    Логгер Forge.
 
     Ответственность:
-    - фиксировать этапы выполнения;
-    - сохранять ошибки;
-    - создавать audit trail.
+    - запись событий выполнения;
+    - запись ошибок;
+    - структурированный вывод.
 
     Не отвечает за:
+    - принятие решений;
     - обработку ошибок;
-    - изменение состояния pipeline;
-    - принятие решений.
+    - управление pipeline.
     """
 
     def __init__(
         self,
-        log_path: str = "logs"
-    ):
-        self.log_path = Path(
-            log_path
+        log_directory: str = "logs"
+    ) -> None:
+
+        self.log_directory = Path(
+            log_directory
         )
 
-        self.log_path.mkdir(
+        self.log_directory.mkdir(
             parents=True,
             exist_ok=True
         )
 
-        self.execution_file = (
-            self.log_path
-            / "execution.log"
+        self.execution_logger = (
+            self._create_logger(
+                "forge_execution",
+                "execution.log"
+            )
         )
 
-        self.error_file = (
-            self.log_path
-            / "errors.log"
+        self.error_logger = (
+            self._create_logger(
+                "forge_errors",
+                "errors.log"
+            )
         )
 
-    def _write(
+
+    def _create_logger(
         self,
-        file_path: Path,
-        event: Dict[str, Any]
-    ) -> None:
+        name: str,
+        filename: str
+    ) -> logging.Logger:
         """
-        Записывает событие в файл.
+        Создает внутренний logger.
         """
 
-        with file_path.open(
-            "a",
-            encoding="utf-8"
-        ) as file:
+        logger = logging.getLogger(
+            name
+        )
 
-            file.write(
-                json.dumps(
-                    event,
-                    ensure_ascii=False
-                )
+        logger.setLevel(
+            logging.INFO
+        )
+
+        if not logger.handlers:
+
+            handler = logging.FileHandler(
+                self.log_directory / filename,
+                encoding="utf-8"
             )
 
-            file.write("\n")
+            formatter = logging.Formatter(
+                "%(message)s"
+            )
+
+            handler.setFormatter(
+                formatter
+            )
+
+            logger.addHandler(
+                handler
+            )
+
+        return logger
+
 
     def log(
         self,
-        event_type: str,
+        event: str,
         message: str,
-        metadata: Dict[str, Any] | None = None
+        data: dict[str, Any] | None = None
     ) -> None:
         """
-        Создает информационное событие.
+        Записывает событие выполнения.
         """
 
-        event = {
+        payload = {
             "timestamp": (
-                datetime.now()
+                datetime.utcnow()
                 .isoformat()
             ),
-            "type": event_type,
+            "event": event,
             "message": message,
-            "metadata": (
-                metadata
-                if metadata
-                else {}
-            )
+            "data": data or {}
         }
 
-        self._write(
-            self.execution_file,
-            event
+        self.execution_logger.info(
+            json.dumps(
+                payload,
+                ensure_ascii=False
+            )
         )
+
 
     def error(
         self,
+        event: str,
         message: str,
-        metadata: Dict[str, Any] | None = None
+        data: dict[str, Any] | None = None
     ) -> None:
         """
-        Создает событие ошибки.
+        Записывает ошибку.
         """
 
-        event = {
+        payload = {
             "timestamp": (
-                datetime.now()
+                datetime.utcnow()
                 .isoformat()
             ),
-            "level": "error",
+            "event": event,
             "message": message,
-            "metadata": (
-                metadata
-                if metadata
-                else {}
-            )
+            "data": data or {}
         }
 
-        self._write(
-            self.error_file,
-            event
+        self.error_logger.error(
+            json.dumps(
+                payload,
+                ensure_ascii=False
+            )
         )
 
-    def agent_started(
-        self,
-        agent_name: str,
-        task_id: str
-    ) -> None:
-        """
-        Лог начала работы агента.
-        """
-
-        self.log(
-            "agent_started",
-            (
-                f"Agent {agent_name} started"
-            ),
-            {
-                "agent": agent_name,
-                "task_id": task_id
-            }
-        )
-
-    def agent_completed(
-        self,
-        agent_name: str,
-        task_id: str
-    ) -> None:
-        """
-        Лог успешного завершения агента.
-        """
-
-        self.log(
-            "agent_completed",
-            (
-                f"Agent {agent_name} completed"
-            ),
-            {
-                "agent": agent_name,
-                "task_id": task_id
-            }
-        )
 
     def pipeline_failed(
         self,
@@ -174,13 +161,13 @@ class ForgeLogger:
         error: str
     ) -> None:
         """
-        Лог ошибки pipeline.
+        Специализированная запись ошибки pipeline.
         """
 
         self.error(
+            "pipeline_failed",
             (
-                f"Pipeline failed "
-                f"at stage {stage}"
+                f"Pipeline failed at {stage}"
             ),
             {
                 "stage": stage,
