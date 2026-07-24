@@ -1,0 +1,182 @@
+version: 1.0
+
+project: Forge
+
+description: >
+  Конституция проекта определяет инженерные правила,
+  обязательные для всех инженерных агентов Forge.
+  Ни один агент не может нарушать данные правила.
+
+principles:
+
+  - id: ARCH-001
+    name: Single Responsibility
+    description: >
+      Каждый компонент должен иметь одну ответственность
+      и одну причину для изменения.
+
+  - id: ARCH-002
+    name: Explicit Dependencies
+    description: >
+      Все зависимости должны быть объявлены явно.
+      Скрытые зависимости запрещены.
+
+  - id: ARCH-003
+    name: Dependency Direction
+    description: >
+      Зависимости направлены только внутрь архитектуры.
+      Циклические зависимости запрещены.
+
+  - id: ARCH-004
+    name: Interface First
+    description: >
+      Компоненты взаимодействуют только через публичные контракты.
+
+  - id: ARCH-005
+    name: Stateless Services
+    description: >
+      Сервисы не должны хранить изменяемое внутреннее состояние.
+
+  - id: ARCH-006
+    name: Testability
+    description: >
+      Каждый компонент должен быть пригоден для модульного тестирования.
+
+  - id: ARCH-007
+    name: Readability
+    description: >
+      Предпочтение всегда отдается читаемости кода,
+      а не сокращению количества строк.
+
+  - id: ARCH-008
+    name: Simplicity
+    description: >
+      Предпочитать самое простое решение,
+      удовлетворяющее требованиям задачи.
+
+  - id: ARCH-009
+    name: Documentation
+    description: >
+      Любое архитектурное решение должно быть задокументировано.
+
+agent_rules:
+
+  product:
+
+    allow:
+      - analyze_requirements
+      - define_acceptance_criteria
+      - identify_constraints
+
+    deny:
+      - generate_code
+      - modify_architecture
+
+  architecture:
+
+    allow:
+      - design_architecture
+      - choose_patterns
+      - define_interfaces
+      - identify_risks
+
+    deny:
+      - generate_code
+
+  coding:
+
+    allow:
+      - generate_code
+      - refactor_code
+      - implement_interfaces
+
+    deny:
+      - modify_architecture
+      - change_public_contracts
+      - redefine_requirements
+
+  review:
+
+    allow:
+      - validate_code
+      - detect_duplicates
+      - detect_architecture_violations
+      - reject_changes
+
+    deny:
+      - modify_code
+      - rewrite_architecture
+
+  testing:
+
+    allow:
+      - generate_tests
+      - verify_acceptance_criteria
+
+    deny:
+      - modify_code
+      - modify_requirements
+
+  release:
+
+    allow:
+      - generate_release_notes
+      - prepare_release_package
+
+    deny:
+      - modify_code
+      - modify_architecture
+
+review_policy:
+
+  reject_if:
+
+    - duplicated_code
+
+    - cyclic_dependency
+
+    - hidden_dependency
+
+    - architecture_violation
+
+    - undocumented_public_api
+
+    - missing_tests
+
+    - contract_violation
+
+    - invalid_output_schema
+
+memory_policy:
+
+  save:
+
+    - architecture_decision
+
+    - new_term
+
+    - public_interface
+
+    - accepted_pattern
+
+  ignore:
+
+    - temporary_notes
+
+    - failed_attempt
+
+    - intermediate_output
+
+pipeline:
+
+  stop_on_failure: true
+
+  require_review: true
+
+  require_tests: true
+
+metadata:
+
+  author: Forge
+
+  version: 1.0
