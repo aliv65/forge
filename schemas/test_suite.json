@@ -1,0 +1,170 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Forge Test Suite",
+  "description": "Контракт набора тестов, создаваемого Testing Agent для проверки реализации.",
+  "type": "object",
+  "required": [
+    "id",
+    "implementation_id",
+    "status",
+    "tests",
+    "acceptance_criteria_coverage",
+    "issues",
+    "summary"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Уникальный идентификатор набора тестов.",
+      "examples": [
+        "TEST-001"
+      ]
+    },
+    "implementation_id": {
+      "type": "string",
+      "description": "Идентификатор проверяемой реализации."
+    },
+    "status": {
+      "type": "string",
+      "description": "Итоговый статус тестирования.",
+      "enum": [
+        "passed",
+        "failed",
+        "blocked"
+      ]
+    },
+    "tests": {
+      "type": "array",
+      "description": "Список тестовых сценариев.",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "type",
+          "description",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Идентификатор тестового сценария.",
+            "examples": [
+              "TEST-001-CASE-001"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "Название тестового сценария."
+          },
+          "type": {
+            "type": "string",
+            "description": "Тип тестирования.",
+            "enum": [
+              "unit",
+              "integration",
+              "system",
+              "acceptance"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "description": "Описание проверяемого поведения."
+          },
+          "status": {
+            "type": "string",
+            "description": "Результат выполнения теста.",
+            "enum": [
+              "passed",
+              "failed",
+              "skipped"
+            ]
+          },
+          "failure_reason": {
+            "type": "string",
+            "description": "Причина ошибки теста, если тест завершился неуспешно."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "acceptance_criteria_coverage": {
+      "type": "array",
+      "description": "Связь критериев приемки задачи с тестовыми сценариями.",
+      "items": {
+        "type": "object",
+        "required": [
+          "criterion",
+          "covered",
+          "tests"
+        ],
+        "properties": {
+          "criterion": {
+            "type": "string",
+            "description": "Критерий приемки из Task."
+          },
+          "covered": {
+            "type": "boolean",
+            "description": "Покрыт ли критерий тестами."
+          },
+          "tests": {
+            "type": "array",
+            "description": "Идентификаторы тестов, проверяющих критерий.",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "issues": {
+      "type": "array",
+      "description": "Проблемы, обнаруженные в ходе тестирования.",
+      "items": {
+        "type": "object",
+        "required": [
+          "description",
+          "severity"
+        ],
+        "properties": {
+          "description": {
+            "type": "string",
+            "description": "Описание найденной проблемы."
+          },
+          "severity": {
+            "type": "string",
+            "description": "Критичность проблемы.",
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "summary": {
+      "type": "string",
+      "description": "Краткое описание результатов тестирования."
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Дополнительная информация о тестировании.",
+      "properties": {
+        "created_at": {
+          "type": "string",
+          "description": "Дата создания набора тестов."
+        },
+        "agent_version": {
+          "type": "string",
+          "description": "Версия Testing Agent."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
