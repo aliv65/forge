@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Forge Review Report",
+  "description": "Контракт отчета проверки качества, создаваемого Review Agent и передаваемого Testing Agent.",
+  "type": "object",
+  "required": [
+    "id",
+    "implementation_id",
+    "status",
+    "summary",
+    "violations",
+    "warnings",
+    "recommendations",
+    "conclusion"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Уникальный идентификатор отчета проверки.",
+      "examples": [
+        "REVIEW-001"
+      ]
+    },
+    "implementation_id": {
+      "type": "string",
+      "description": "Идентификатор проверяемой реализации."
+    },
+    "status": {
+      "type": "string",
+      "description": "Итоговый статус проверки.",
+      "enum": [
+        "approved",
+        "changes_requested",
+        "rejected"
+      ]
+    },
+    "summary": {
+      "type": "string",
+      "description": "Краткое описание результатов проверки."
+    },
+    "violations": {
+      "type": "array",
+      "description": "Критические нарушения, препятствующие принятию реализации.",
+      "items": {
+        "type": "object",
+        "required": [
+          "rule",
+          "description",
+          "severity"
+        ],
+        "properties": {
+          "rule": {
+            "type": "string",
+            "description": "Нарушенное правило Constitution или архитектурное ограничение."
+          },
+          "description": {
+            "type": "string",
+            "description": "Описание найденного нарушения."
+          },
+          "severity": {
+            "type": "string",
+            "description": "Критичность нарушения.",
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "description": "Некритичные замечания, не блокирующие принятие реализации.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "recommendations": {
+      "type": "array",
+      "description": "Рекомендации по улучшению реализации.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "constitution_check": {
+      "type": "object",
+      "description": "Результат проверки соответствия Constitution.",
+      "required": [
+        "passed",
+        "checked_rules"
+      ],
+      "properties": {
+        "passed": {
+          "type": "boolean",
+          "description": "Пройдена ли проверка инженерных правил."
+        },
+        "checked_rules": {
+          "type": "array",
+          "description": "Список проверенных правил.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "architecture_check": {
+      "type": "object",
+      "description": "Результат проверки соответствия Architecture Decision.",
+      "required": [
+        "passed",
+        "deviations"
+      ],
+      "properties": {
+        "passed": {
+          "type": "boolean",
+          "description": "Соответствует ли реализация утвержденной архитектуре."
+        },
+        "deviations": {
+          "type": "array",
+          "description": "Отклонения от архитектурного решения.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "conclusion": {
+      "type": "string",
+      "description": "Итоговое заключение Review Agent."
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Дополнительная информация об отчете.",
+      "properties": {
+        "created_at": {
+          "type": "string",
+          "description": "Дата создания отчета."
+        },
+        "agent_version": {
+          "type": "string",
+          "description": "Версия Review Agent."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
