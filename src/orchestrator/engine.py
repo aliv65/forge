@@ -1,68 +1,35 @@
 """
 Forge Orchestrator Engine.
 
-Главный исполнительный механизм pipeline.
+Главный исполнительный механизм Forge.
 """
 
 from orchestrator.context import ExecutionContext
 from orchestrator.pipeline import Pipeline
-
-from agents.product import ProductAgent
-from agents.architect import ArchitectAgent
-from agents.coder import CodingAgent
-from agents.reviewer import ReviewAgent
-from agents.tester import TestingAgent
-from agents.release import ReleaseAgent
+from agents.base import AgentResult
 
 
 class Orchestrator:
     """
-    Управляет жизненным циклом выполнения задачи.
+    Управляет выполнением pipeline.
 
-    Ответственность:
-    - создать pipeline;
-    - запускать агентов;
-    - контролировать ошибки;
-    - возвращать итоговый результат.
-
-    Не отвечает за:
-    - бизнес-логику агентов;
-    - генерацию решений;
-    - хранение данных.
+    Orchestrator не знает ничего о реализации
+    отдельных агентов. Он работает только
+    с их контрактом.
     """
 
     def __init__(
         self,
-        pipeline: Pipeline | None = None
+        pipeline: Pipeline
     ):
-        self.pipeline = (
-            pipeline
-            if pipeline is not None
-            else self.create_default_pipeline()
-        )
-
-    def create_default_pipeline(self) -> Pipeline:
-        """
-        Создает стандартный Forge pipeline.
-        """
-
-        return Pipeline(
-            agents=[
-                ProductAgent(),
-                ArchitectAgent(),
-                CodingAgent(),
-                ReviewAgent(),
-                TestingAgent(),
-                ReleaseAgent()
-            ]
-        )
+        self.pipeline = pipeline
 
     def run(
         self,
         context: ExecutionContext
-    ):
+    ) -> dict:
         """
-        Запускает выполнение pipeline.
+        Запускает pipeline.
         """
 
         for agent in self.pipeline.get_agents():
@@ -71,14 +38,14 @@ class Orchestrator:
                 agent.name
             )
 
-            result = agent.execute(
+            result: AgentResult = agent.run(
                 context
             )
 
-            if not result.is_successful():
+            if not result.success:
 
                 context.add_error(
-                    f"{agent.name}: {result.error}"
+                    result.error
                 )
 
                 return {
