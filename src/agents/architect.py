@@ -1,11 +1,15 @@
 """
 Architect Agent.
 
-Формирует архитектурное решение (ADR) на основе
-спецификации Product Agent.
+Формирует архитектурное решение (ADR) и сохраняет его в Architecture Memory.
 """
 
+from __future__ import annotations
+
 from agents.base import BaseAgent, AgentResult
+
+from memory.architecture_memory import ArchitectureMemory
+
 from orchestrator.context import ExecutionContext
 
 
@@ -15,8 +19,13 @@ class ArchitectAgent(BaseAgent):
 
     Ответственность:
     - анализировать спецификацию;
-    - выбирать архитектурный подход;
-    - фиксировать архитектурное решение.
+    - формировать архитектурное решение;
+    - сохранять ADR в память.
+
+    Не отвечает за:
+    - реализацию;
+    - тестирование;
+    - релиз.
     """
 
     name = "architect-agent"
@@ -38,12 +47,29 @@ class ArchitectAgent(BaseAgent):
 4. Причины выбора решения.
 """
 
+    def __init__(
+        self,
+        provider,
+        logger,
+        memory: ArchitectureMemory | None = None
+    ) -> None:
+
+        super().__init__(
+            provider,
+            logger
+        )
+
+        self.memory = (
+            memory
+            or ArchitectureMemory()
+        )
+
     def execute(
         self,
         context: ExecutionContext
     ) -> AgentResult:
         """
-        Создает архитектурное решение.
+        Создает ADR.
         """
 
         specification = context.get_result(
@@ -51,15 +77,18 @@ class ArchitectAgent(BaseAgent):
         )
 
         if specification is None:
+
             return AgentResult.fail(
                 "Product specification not found."
             )
 
         prompt = self.PROMPT_TEMPLATE.format(
-            specification=specification["summary"]
+            specification=(
+                specification["summary"]
+            )
         )
 
-        llm_response = self.ask_llm(
+        response = self.ask_llm(
             prompt=prompt,
             context={
                 "task_id": context.task.id
@@ -67,17 +96,30 @@ class ArchitectAgent(BaseAgent):
         )
 
         architecture_decision = {
-            "id": f"ADR-{context.task.id}",
+            "id": (
+                f"ADR-{context.task.id}"
+            ),
             "task_id": context.task.id,
-            "summary": llm_response,
+            "summary": response,
             "components": [
                 "API",
                 "Application Layer",
                 "Persistence Layer"
             ],
-            "constraints": specification["constraints"],
+            "constraints": (
+                specification["constraints"]
+            ),
             "status": "accepted"
         }
+
+        self.memory.save(
+            architecture_decision
+        )
+
+        context.set_metadata(
+            "architecture_memory_saved",
+            True
+        )
 
         return AgentResult.ok(
             architecture_decision
