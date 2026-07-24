@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Forge Architecture Decision",
+  "description": "Контракт архитектурного решения, создаваемого Architecture Agent и передаваемого Coding Agent.",
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "status",
+    "summary",
+    "affected_components",
+    "changes",
+    "rationale",
+    "risks",
+    "constitution_check"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Уникальный идентификатор архитектурного решения.",
+      "examples": [
+        "ADR-001"
+      ]
+    },
+    "title": {
+      "type": "string",
+      "description": "Краткое название архитектурного решения."
+    },
+    "status": {
+      "type": "string",
+      "description": "Статус архитектурного решения.",
+      "enum": [
+        "proposed",
+        "accepted",
+        "rejected"
+      ]
+    },
+    "summary": {
+      "type": "string",
+      "description": "Краткое описание принятого решения."
+    },
+    "affected_components": {
+      "type": "array",
+      "description": "Компоненты системы, которые затрагивает решение.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "changes": {
+      "type": "array",
+      "description": "Список изменений, необходимых для реализации решения.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "rationale": {
+      "type": "string",
+      "description": "Обоснование выбранного архитектурного решения."
+    },
+    "risks": {
+      "type": "array",
+      "description": "Потенциальные риски выбранного решения.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "alternatives": {
+      "type": "array",
+      "description": "Рассмотренные альтернативные решения.",
+      "items": {
+        "type": "object",
+        "required": [
+          "option",
+          "reason_rejected"
+        ],
+        "properties": {
+          "option": {
+            "type": "string",
+            "description": "Описание альтернативного подхода."
+          },
+          "reason_rejected": {
+            "type": "string",
+            "description": "Причина отказа от альтернативы."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "constitution_check": {
+      "type": "object",
+      "description": "Результат проверки соответствия Constitution.",
+      "required": [
+        "passed",
+        "violations"
+      ],
+      "properties": {
+        "passed": {
+          "type": "boolean",
+          "description": "Пройдена ли проверка инженерных правил."
+        },
+        "violations": {
+          "type": "array",
+          "description": "Список нарушений Constitution.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Дополнительная информация о решении.",
+      "properties": {
+        "created_at": {
+          "type": "string",
+          "description": "Дата создания решения."
+        },
+        "author": {
+          "type": "string",
+          "description": "Создатель решения."
+        },
+        "related_tasks": {
+          "type": "array",
+          "description": "Связанные инженерные задачи.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
