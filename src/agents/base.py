@@ -1,50 +1,154 @@
 """
 Base Agent.
 
-Общий контракт всех инженерных агентов Forge.
+Определяет базовый контракт для всех агентов Forge.
 """
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import Any
 
 from orchestrator.context import ExecutionContext
+from providers.base import BaseProvider
+from utils.logger import ForgeLogger
 
 
+@dataclass(slots=True)
 class AgentResult:
     """
-    Базовый контейнер результата работы агента.
+    Результат выполнения агента.
     """
 
-    def __init__(
-        self,
-        success: bool,
-        data: Any = None,
-        error: str | None = None
-    ):
-        self.success = success
-        self.data = data
-        self.error = error
+    success: bool
+    payload: dict[str, Any] | None = None
+    error: str | None = None
 
-    def is_successful(self) -> bool:
-        """
-        Проверяет успешность выполнения.
-        """
+    @classmethod
+    def ok(cls, payload: dict[str, Any]) -> "AgentResult":
+        return cls(
+            success=True,
+            payload=payload,
+            error=None
+        )
 
-        return self.success
+    @classmethod
+    def fail(cls, message: str) -> "AgentResult":
+        return cls(
+            success=False,
+            payload=None,
+            error=message
+        )
 
 
 class BaseAgent(ABC):
     """
-    Абстрактный инженерный агент Forge.
+    Базовый класс всех агентов Forge.
 
-    Все агенты системы должны наследоваться
-    от этого класса.
+    Жизненный цикл:
+
+        run()
+            ↓
+        validate()
+            ↓
+        execute()
+            ↓
+        logging
+            ↓
+        AgentResult
     """
 
-    name: str = "base-agent"
+    name = "base-agent"
 
-    def __init__(self):
-        pass
+    def __init__(
+        self,
+        provider: BaseProvider,
+        logger: ForgeLogger
+    ):
+        self.provider = provider
+        self.logger = logger
+
+    def run(
+        self,
+        context: ExecutionContext
+    ) -> AgentResult:
+        """
+        Единая точка входа.
+        """
+
+        self.logger.agent_started(
+            self.name,
+            context.task.id
+        )
+
+        if not self.validate(context):
+            result = AgentResult.fail(
+                "Context validation failed."
+            )
+
+            self.logger.error(
+                result.error,
+                {
+                    "agent": self.name,
+                    "task_id": context.task.id
+                }
+            )
+
+            return result
+
+        result = self.execute(context)
+
+        if result.success:
+
+            if result.payload is not None:
+                context.add_result(
+                    self.name,
+                    result.payload
+                )
+
+            self.logger.agent_completed(
+                self.name,
+                context.task.id
+            )
+
+        else:
+
+            self.logger.error(
+                result.error or "Unknown error",
+                {
+                    "agent": self.name,
+                    "task_id": context.task.id
+                }
+            )
+
+        return result
+
+    def validate(
+        self,
+        context: ExecutionContext
+    ) -> bool:
+        """
+        Базовая проверка контекста.
+        """
+
+        return context is not None and context.task is not None
+
+    def ask_llm(
+        self,
+        prompt: str,
+        context: dict[str, Any] | None = None
+    ) -> str:
+        """
+        Унифицированный вызов AI Provider.
+        """
+
+        response = self.provider.generate(
+            prompt=prompt,
+            context=context
+        )
+
+        return response.content
 
     @abstractmethod
     def execute(
@@ -52,48 +156,6 @@ class BaseAgent(ABC):
         context: ExecutionContext
     ) -> AgentResult:
         """
-        Выполняет этап pipeline.
-
-        Каждый агент реализует собственную логику.
+        Реализуется конкретным агентом.
         """
-
-        pass
-
-    def validate_context(
-        self,
-        context: ExecutionContext
-    ) -> bool:
-        """
-        Базовая проверка входного контекста.
-        """
-
-        return (
-            context is not None
-            and context.task is not None
-        )
-
-    def create_success_result(
-        self,
-        data: Any
-    ) -> AgentResult:
-        """
-        Создает успешный результат.
-        """
-
-        return AgentResult(
-            success=True,
-            data=data
-        )
-
-    def create_error_result(
-        self,
-        error: str
-    ) -> AgentResult:
-        """
-        Создает результат с ошибкой.
-        """
-
-        return AgentResult(
-            success=False,
-            error=error
-        )
+        raise NotImplementedError
