@@ -1,73 +1,81 @@
 """
-AI Provider Base.
+Base Provider.
 
-Абстракция взаимодействия Forge с AI-моделями.
+Абстракция для взаимодействия Forge с различными AI-моделями.
 """
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Dict, Any
+from dataclasses import dataclass
+from typing import Any
 
 
+@dataclass(slots=True)
 class ProviderResponse:
     """
-    Унифицированный результат ответа AI Provider.
+    Унифицированный ответ AI Provider.
     """
 
-    def __init__(
-        self,
-        content: str,
-        metadata: Dict[str, Any] | None = None
-    ):
-        self.content = content
+    content: str
 
-        self.metadata = (
-            metadata
-            if metadata is not None
-            else {}
-        )
+    metadata: dict[str, Any] | None = None
 
 
 class BaseProvider(ABC):
     """
-    Абстрактный AI Provider.
+    Базовый контракт AI Provider.
 
-    Любой источник AI-моделей должен
-    реализовывать этот контракт.
+    Ответственность:
+    - предоставить единый интерфейс
+      генерации ответа.
+
+    Не отвечает за:
+    - формирование prompt;
+    - бизнес-логику;
+    - обработку артефактов.
     """
-
-    name: str = "base-provider"
 
     @abstractmethod
     def generate(
         self,
         prompt: str,
-        context: Dict[str, Any] | None = None
+        context: dict[str, Any] | None = None
     ) -> ProviderResponse:
         """
-        Генерирует ответ на основе запроса.
+        Выполняет запрос к AI-модели.
 
         Args:
             prompt:
-                Инструкция для модели.
+                Текст запроса.
 
             context:
-                Дополнительные данные задачи.
+                Дополнительные данные выполнения.
 
         Returns:
-            ProviderResponse
+            ProviderResponse.
         """
 
-        pass
+        raise NotImplementedError
 
-    def validate_prompt(
-        self,
-        prompt: str
+    def health_check(
+        self
     ) -> bool:
         """
-        Базовая проверка запроса.
+        Проверяет доступность провайдера.
+
+        По умолчанию считаем,
+        что провайдер доступен.
         """
 
-        return (
-            prompt is not None
-            and len(prompt.strip()) > 0
-        )
+        return True
+
+    @property
+    def name(
+        self
+    ) -> str:
+        """
+        Название провайдера.
+        """
+
+        return self.__class__.__name__
