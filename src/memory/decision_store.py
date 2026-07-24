@@ -1,192 +1,138 @@
 """
 Decision Store.
 
-Управление архитектурными решениями Forge (ADR).
+Предоставляет API для поиска и анализа архитектурных решений, сохраненных в ArchitectureMemory.
 """
 
-from pathlib import Path
-from datetime import datetime
-from typing import Optional, List, Dict, Any
-import json
+from __future__ import annotations
+
+from typing import Any
+
+from memory.architecture_memory import ArchitectureMemory
 
 
 class DecisionStore:
     """
-    Хранилище архитектурных решений.
+    Каталог архитектурных решений.
 
     Ответственность:
-    - создавать ADR;
-    - получать ADR по ID;
-    - искать решения;
-    - обновлять статус решений.
+    - поиск решений;
+    - фильтрация;
+    - получение статистики.
 
     Не отвечает за:
-    - принятие архитектурных решений;
-    - генерацию решений;
-    - работу агентов.
+    - сохранение решений;
+    - изменение решений;
+    - выполнение pipeline.
     """
 
     def __init__(
         self,
-        storage_path: str = "memory/decisions"
-    ):
-        self.storage_path = Path(
-            storage_path
-        )
+        memory: ArchitectureMemory | None = None
+    ) -> None:
+        self.memory = memory or ArchitectureMemory()
 
-        self.storage_path.mkdir(
-            parents=True,
-            exist_ok=True
-        )
-
-    def create(
-        self,
-        decision: Dict[str, Any]
-    ) -> str:
-        """
-        Создает новое архитектурное решение.
-        """
-
-        decision_id = decision.get(
-            "id"
-        )
-
-        if decision_id is None:
-            decision_id = (
-                f"ADR-{int(datetime.now().timestamp())}"
-            )
-
-        decision_record = {
-            "id": decision_id,
-            "created_at": (
-                datetime.now()
-                .isoformat()
-            ),
-            "status": (
-                decision.get(
-                    "status",
-                    "proposed"
-                )
-            ),
-            "decision": decision
-        }
-
-        file_path = (
-            self.storage_path
-            / f"{decision_id}.json"
-        )
-
-        file_path.write_text(
-            json.dumps(
-                decision_record,
-                indent=2,
-                ensure_ascii=False
-            ),
-            encoding="utf-8"
-        )
-
-        return decision_id
-
-    def get(
-        self,
-        decision_id: str
-    ) -> Optional[Dict[str, Any]]:
-        """
-        Получает решение по идентификатору.
-        """
-
-        file_path = (
-            self.storage_path
-            / f"{decision_id}.json"
-        )
-
-        if not file_path.exists():
-            return None
-
-        return json.loads(
-            file_path.read_text(
-                encoding="utf-8"
-            )
-        )
-
-    def list_all(
+    def all(
         self
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """
-        Возвращает все архитектурные решения.
+        Возвращает все решения.
         """
 
-        decisions = []
+        return self.memory.load_all()
 
-        for file_path in self.storage_path.glob(
-            "*.json"
-        ):
-            decisions.append(
-                json.loads(
-                    file_path.read_text(
-                        encoding="utf-8"
-                    )
-                )
-            )
+    def latest(
+        self
+    ) -> dict[str, Any] | None:
+        """
+        Возвращает последнее решение.
+        """
 
-        return decisions
+        return self.memory.latest()
 
-    def update_status(
+    def by_task(
         self,
-        decision_id: str,
+        task_id: str
+    ) -> dict[str, Any] | None:
+        """
+        Возвращает решение по идентификатору задачи.
+        """
+
+        return self.memory.find_by_task(task_id)
+
+    def by_status(
+        self,
         status: str
-    ) -> bool:
+    ) -> list[dict[str, Any]]:
         """
-        Обновляет статус ADR.
+        Возвращает решения с указанным статусом.
         """
 
-        decision = self.get(
-            decision_id
-        )
+        return [
+            decision
+            for decision in self.memory.load_all()
+            if decision.get("status") == status
+        ]
 
-        if decision is None:
-            return False
+    def containing_component(
+        self,
+        component: str
+    ) -> list[dict[str, Any]]:
+        """
+        Ищет решения, содержащие компонент.
+        """
 
-        decision["status"] = status
-
-        file_path = (
-            self.storage_path
-            / f"{decision_id}.json"
-        )
-
-        file_path.write_text(
-            json.dumps(
-                decision,
-                indent=2,
-                ensure_ascii=False
-            ),
-            encoding="utf-8"
-        )
-
-        return True
+        return [
+            decision
+            for decision in self.memory.load_all()
+            if component in decision.get(
+                "components",
+                []
+            )
+        ]
 
     def search(
         self,
-        keyword: str
-    ) -> List[Dict[str, Any]]:
+        text: str
+    ) -> list[dict[str, Any]]:
         """
-        Поиск решений по ключевому слову.
+        Выполняет простой полнотекстовый поиск
+        по краткому описанию решения.
         """
 
-        results = []
+        query = text.lower()
 
-        keyword = keyword.lower()
-
-        for decision in self.list_all():
-
-            content = json.dumps(
-                decision,
-                ensure_ascii=False
+        return [
+            decision
+            for decision in self.memory.load_all()
+            if query in decision.get(
+                "summary",
+                ""
             ).lower()
+        ]
 
-            if keyword in content:
-                results.append(
-                    decision
-                )
+    def statistics(
+        self
+    ) -> dict[str, Any]:
+        """
+        Возвращает сводную статистику.
+        """
 
-        return results
+        decisions = self.memory.load_all()
+
+        statuses: dict[str, int] = {}
+
+        for decision in decisions:
+            status = decision.get(
+                "status",
+                "unknown"
+            )
+
+            statuses[status] = (
+                statuses.get(status, 0) + 1
+            )
+
+        return {
+            "total": len(decisions),
+            "statuses": statuses
+        }
