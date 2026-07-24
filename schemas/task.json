@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Forge Task",
+  "description": "Контракт инженерной задачи, создаваемой Product Agent и передаваемой через pipeline Forge.",
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "description",
+    "requirements",
+    "constraints",
+    "acceptance_criteria",
+    "open_questions"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Уникальный идентификатор задачи.",
+      "examples": [
+        "TASK-001"
+      ]
+    },
+    "title": {
+      "type": "string",
+      "description": "Краткое название задачи."
+    },
+    "description": {
+      "type": "string",
+      "description": "Описание цели и сути задачи."
+    },
+    "requirements": {
+      "type": "array",
+      "description": "Функциональные требования задачи.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "constraints": {
+      "type": "array",
+      "description": "Ограничения, которые необходимо учитывать при реализации.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "acceptance_criteria": {
+      "type": "array",
+      "description": "Критерии, по которым определяется успешность выполнения задачи.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "open_questions": {
+      "type": "array",
+      "description": "Список вопросов, требующих уточнения перед реализацией.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Дополнительная информация о задаче.",
+      "properties": {
+        "created_at": {
+          "type": "string",
+          "description": "Дата создания задачи."
+        },
+        "source": {
+          "type": "string",
+          "description": "Источник задачи."
+        },
+        "priority": {
+          "type": "string",
+          "description": "Приоритет задачи.",
+          "enum": [
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
