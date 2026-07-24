@@ -4,9 +4,22 @@ Forge.
 Точка входа в приложение.
 """
 
+from agents.architect import ArchitectAgent
+from agents.coder import CodingAgent
+from agents.product import ProductAgent
+from agents.release import ReleaseAgent
+from agents.reviewer import ReviewAgent
+from agents.tester import TestingAgent
+
 from models.task import Task
+
 from orchestrator.context import ExecutionContext
 from orchestrator.engine import Orchestrator
+from orchestrator.pipeline import Pipeline
+
+from providers.mock import MockProvider
+
+from utils.logger import ForgeLogger
 
 
 def create_demo_task() -> Task:
@@ -24,24 +37,44 @@ def create_demo_task() -> Task:
         requirements=[
             "Добавить кнопку экспорта",
             "Сгенерировать PDF",
-            "Скачать файл пользователю"
+            "Вернуть пользователю готовый файл"
         ],
         constraints=[
-            "Использовать существующую архитектуру",
-            "Не нарушать API"
+            "Не изменять публичный API",
+            "Использовать существующую архитектуру"
         ],
         acceptance_criteria=[
             "PDF успешно создается",
-            "Файл скачивается",
-            "Ошибки отображаются пользователю"
+            "Файл доступен пользователю",
+            "Ошибки корректно обрабатываются"
         ],
         open_questions=[]
     )
 
 
+def create_pipeline() -> Pipeline:
+    """
+    Создает стандартный pipeline Forge.
+    """
+
+    provider = MockProvider()
+    logger = ForgeLogger()
+
+    agents = [
+        ProductAgent(provider, logger),
+        ArchitectAgent(provider, logger),
+        CodingAgent(provider, logger),
+        ReviewAgent(provider, logger),
+        TestingAgent(provider, logger),
+        ReleaseAgent(provider, logger),
+    ]
+
+    return Pipeline(agents)
+
+
 def print_header() -> None:
     """
-    Печатает заголовок приложения.
+    Выводит заголовок приложения.
     """
 
     print("=" * 60)
@@ -51,27 +84,44 @@ def print_header() -> None:
     print()
 
 
-def print_summary(result: dict) -> None:
+def print_pipeline(pipeline: Pipeline) -> None:
     """
-    Печатает итог выполнения.
+    Показывает последовательность агентов.
     """
 
+    print("Pipeline:")
+
+    for index, agent in enumerate(
+        pipeline.get_agents(),
+        start=1
+    ):
+        print(f"{index}. {agent.name}")
+
     print()
+
+
+def print_summary(result: dict) -> None:
+    """
+    Выводит итог выполнения.
+    """
+
     print("=" * 60)
 
     if result["status"] == "completed":
 
-        print("Pipeline completed successfully")
-
         release = result["release"]
+
+        print("Pipeline completed successfully")
+        print()
 
         print(f"Release ID : {release['id']}")
         print(f"Status     : {release['status']}")
-        print(f"Task       : {release['task_id']}")
+        print(f"Task ID    : {release['task_id']}")
 
     else:
 
         print("Pipeline failed")
+        print()
 
         print(f"Stage : {result['stage']}")
         print(f"Error : {result['error']}")
@@ -80,29 +130,24 @@ def print_summary(result: dict) -> None:
 
 
 def main() -> None:
-    """
-    Запускает демонстрационный pipeline.
-    """
 
     print_header()
 
     task = create_demo_task()
 
-    print(f"Task: {task.title}")
-    print()
-
     context = ExecutionContext(task)
 
-    orchestrator = Orchestrator()
+    pipeline = create_pipeline()
 
-    result = orchestrator.run(context)
+    print_pipeline(pipeline)
 
-    print()
+    orchestrator = Orchestrator(
+        pipeline=pipeline
+    )
 
-    print("Pipeline:")
-
-    for stage in context.results.keys():
-        print(f"  ✓ {stage}")
+    result = orchestrator.run(
+        context
+    )
 
     print_summary(result)
 
