@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Forge Common Schemas",
+  "description": "Общие переиспользуемые структуры данных, используемые контрактами Forge.",
+  "$defs": {
+    "metadata": {
+      "type": "object",
+      "description": "Общая метаинформация об объекте системы.",
+      "properties": {
+        "created_at": {
+          "type": "string",
+          "description": "Дата создания объекта."
+        },
+        "updated_at": {
+          "type": "string",
+          "description": "Дата последнего изменения объекта."
+        },
+        "agent_version": {
+          "type": "string",
+          "description": "Версия инженерного агента, создавшего объект."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "status": {
+      "type": "string",
+      "description": "Общий статус выполнения операции."
+    },
+
+    "issue": {
+      "type": "object",
+      "description": "Описание обнаруженной проблемы.",
+      "required": [
+        "description",
+        "severity"
+      ],
+      "properties": {
+        "description": {
+          "type": "string",
+          "description": "Описание проблемы."
+        },
+        "severity": {
+          "type": "string",
+          "description": "Уровень критичности проблемы.",
+          "enum": [
+            "critical",
+            "high",
+            "medium",
+            "low"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "component_reference": {
+      "type": "object",
+      "description": "Ссылка на компонент системы.",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Название компонента."
+        },
+        "description": {
+          "type": "string",
+          "description": "Описание назначения компонента."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "agent_reference": {
+      "type": "object",
+      "description": "Описание инженерного агента.",
+      "required": [
+        "name",
+        "role"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Название агента."
+        },
+        "role": {
+          "type": "string",
+          "description": "Ответственность агента в pipeline."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "decision_reference": {
+      "type": "object",
+      "description": "Ссылка на архитектурное решение.",
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Идентификатор архитектурного решения."
+        },
+        "title": {
+          "type": "string",
+          "description": "Название решения."
+        }
+      },
+      "additionalProperties": false
+    },
+
+    "validation_result": {
+      "type": "object",
+      "description": "Общий результат проверки.",
+      "required": [
+        "passed",
+        "message"
+      ],
+      "properties": {
+        "passed": {
+          "type": "boolean",
+          "description": "Успешность проверки."
+        },
+        "message": {
+          "type": "string",
+          "description": "Описание результата проверки."
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
