@@ -25,6 +25,10 @@ class TestingAgent(BaseAgent):
 
     name = "testing-agent"
 
+    constitution_role = "testing"
+
+    schema_name = "test_suite.json"
+
     PROMPT_TEMPLATE = """
 Ты QA Engineer.
 
@@ -84,28 +88,43 @@ class TestingAgent(BaseAgent):
             }
         )
 
+        tests = [
+            {
+                "id": (
+                    f"TEST-{context.task.id}-CASE-{index:03d}"
+                ),
+                "name": criterion,
+                "type": "acceptance",
+                "description": (
+                    "Mock acceptance scenario generated from the task."
+                ),
+                "status": "passed"
+            }
+            for index, criterion in enumerate(
+                context.task.acceptance_criteria,
+                start=1
+            )
+        ]
+
         test_suite = {
             "id": f"TEST-{context.task.id}",
-            "task_id": context.task.id,
+            "implementation_id": implementation["id"],
             "status": "passed",
             "summary": llm_response,
-            "test_cases": [
+            "tests": tests,
+            "acceptance_criteria_coverage": [
                 {
-                    "name": "Экспорт PDF",
-                    "status": "passed"
-                },
-                {
-                    "name": "Обработка ошибки генерации",
-                    "status": "passed"
-                },
-                {
-                    "name": "Проверка пустого отчета",
-                    "status": "passed"
+                    "criterion": criterion,
+                    "covered": True,
+                    "tests": [
+                        tests[index]["id"]
+                    ]
                 }
+                for index, criterion in enumerate(
+                    context.task.acceptance_criteria
+                )
             ],
-            "coverage": 0.92,
-            "issues": [],
-            "release_ready": True
+            "issues": []
         }
 
         return AgentResult.ok(

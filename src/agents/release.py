@@ -26,6 +26,10 @@ class ReleaseAgent(BaseAgent):
 
     name = "release-agent"
 
+    constitution_role = "release"
+
+    schema_name = "release_package.json"
+
     PROMPT_TEMPLATE = """
 Ты Release Manager.
 
@@ -92,9 +96,14 @@ class ReleaseAgent(BaseAgent):
                 "Test suite not found."
             )
 
-        if not tests.get("release_ready", False):
+        if review["status"] != "approved":
             return AgentResult.fail(
-                "Release is not approved."
+                "Release is not approved by review."
+            )
+
+        if tests["status"] != "passed":
+            return AgentResult.fail(
+                "Release tests did not pass."
             )
 
         prompt = self.PROMPT_TEMPLATE.format()
@@ -111,11 +120,31 @@ class ReleaseAgent(BaseAgent):
             "task_id": context.task.id,
             "status": "ready",
             "summary": summary,
-            "specification": specification,
-            "architecture": architecture,
-            "implementation": implementation,
-            "review": review,
-            "tests": tests
+            "changes": {
+                "description": implementation["summary"],
+                "affected_components": architecture[
+                    "affected_components"
+                ],
+                "changed_files": [
+                    file["path"]
+                    for file in implementation["changed_files"]
+                ]
+            },
+            "validation": {
+                "review_status": review["status"],
+                "test_status": tests["status"],
+                "checks_passed": True,
+                "issues": []
+            },
+            "architecture_decisions": [
+                architecture["id"]
+            ],
+            "memory_updates": [
+                "Architecture decision will be saved after release."
+            ],
+            "release_notes": (
+                "Mock pipeline completed without changing application code."
+            )
         }
 
         return AgentResult.ok(

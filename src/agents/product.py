@@ -21,6 +21,10 @@ class ProductAgent(BaseAgent):
 
     name = "product-agent"
 
+    constitution_role = "product"
+
+    schema_name = "task.json"
+
     PROMPT_TEMPLATE = """
 Ты Product Manager.
 
@@ -71,13 +75,16 @@ class ProductAgent(BaseAgent):
             }
         )
 
-        specification = {
-            "id": f"SPEC-{task.id}",
-            "task_id": task.id,
-            "summary": llm_response,
-            "functional_requirements": task.requirements,
-            "constraints": task.constraints,
-            "acceptance_criteria": task.acceptance_criteria
+        specification = task.to_dict()
+
+        specification["metadata"] = {
+            "source": "mock-pipeline"
         }
 
-        return AgentResult.ok(specification)
+        specification["description"] = (
+            f"{task.description} {llm_response}"
+        )
+
+        return AgentResult.ok(
+            specification
+        )

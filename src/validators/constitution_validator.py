@@ -6,7 +6,7 @@ Constitution Validator.
 """
 
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Any
 import yaml
 
 
@@ -25,7 +25,7 @@ class ConstitutionViolation:
 
     def to_dict(
         self
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         return {
             "rule": self.rule,
             "description": self.description
@@ -49,12 +49,12 @@ class ConstitutionValidator:
 
     def __init__(
         self,
-        constitution_path: str = (
-            "constitution/constitution.yaml"
-        )
-    ):
+        constitution_path: str | Path | None = None
+    ) -> None:
+        project_root = Path(__file__).resolve().parents[2]
         self.path = Path(
             constitution_path
+            or project_root / "constitution/constitution.yaml"
         )
 
         self.constitution = (
@@ -63,7 +63,7 @@ class ConstitutionValidator:
 
     def load(
         self
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Загружает Constitution.
         """
@@ -79,42 +79,30 @@ class ConstitutionValidator:
 
     def validate(
         self,
-        artifact: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        artifact: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         Проверяет артефакт.
         """
 
-        violations: List[
-            ConstitutionViolation
-        ] = []
+        violations: list[ConstitutionViolation] = []
 
-        rules = self.constitution.get(
-            "rules",
-            []
+        constitution_check = artifact.get(
+            "constitution_check"
         )
 
-        for rule in rules:
-
-            rule_name = rule.get(
-                "name"
-            )
-
-            required_field = rule.get(
-                "required_field"
-            )
-
-            if (
-                required_field
-                and required_field not in artifact
+        if constitution_check and not constitution_check.get(
+            "passed",
+            False
+        ):
+            for violation in constitution_check.get(
+                "violations",
+                []
             ):
                 violations.append(
                     ConstitutionViolation(
-                        rule=rule_name,
-                        description=(
-                            f"Missing required field: "
-                            f"{required_field}"
-                        )
+                        rule=violation,
+                        description="Artifact failed Constitution validation."
                     )
                 )
 
@@ -130,25 +118,20 @@ class ConstitutionValidator:
 
     def check_agent_contract(
         self,
-        agent_name: str
-    ) -> Dict[str, Any]:
+        agent_role: str
+    ) -> dict[str, Any]:
         """
         Проверяет наличие агента в Constitution.
         """
 
-        agents = self.constitution.get(
-            "agents",
-            []
+        agent_rules = self.constitution.get(
+            "agent_rules",
+            {}
         )
-
-        registered_agents = [
-            agent.get("name")
-            for agent in agents
-        ]
 
         return {
             "registered": (
-                agent_name
-                in registered_agents
+                agent_role
+                in agent_rules
             )
         }

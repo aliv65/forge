@@ -7,9 +7,11 @@ Architecture Memory.
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+from utils.config import config
 
 
 class ArchitectureMemory:
@@ -30,9 +32,19 @@ class ArchitectureMemory:
 
     def __init__(
         self,
-        root: str = "memory/decisions"
+        root: str | Path | None = None
     ) -> None:
-        self.root = Path(root)
+        project_root = Path(__file__).resolve().parents[2]
+
+        configured_root = Path(
+            root or config.memory_directory
+        )
+
+        self.root = (
+            configured_root
+            if configured_root.is_absolute()
+            else project_root / configured_root
+        )
         self.root.mkdir(
             parents=True,
             exist_ok=True
@@ -51,7 +63,7 @@ class ArchitectureMemory:
             "unknown"
         )
 
-        timestamp = datetime.utcnow().strftime(
+        timestamp = datetime.now(UTC).strftime(
             "%Y%m%d_%H%M%S"
         )
 

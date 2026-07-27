@@ -21,6 +21,8 @@ from providers.mock import MockProvider
 
 from utils.logger import ForgeLogger
 
+from utils.config import config
+
 
 def create_demo_task() -> Task:
 
@@ -47,9 +49,14 @@ def create_demo_task() -> Task:
 
 
 def create_pipeline(
-    provider,
-    logger
-):
+    provider: MockProvider,
+    logger: ForgeLogger
+) -> Pipeline:
+
+    if not isinstance(provider, MockProvider):
+        raise ValueError(
+            "Forge demo supports MockProvider only."
+        )
 
     agents = [
         ProductAgent(
@@ -97,7 +104,9 @@ def main():
 
     provider = MockProvider()
 
-    logger = ForgeLogger()
+    logger = ForgeLogger(
+        config.logs_directory
+    )
 
     task = create_demo_task()
 

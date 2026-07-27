@@ -9,11 +9,13 @@ from __future__ import annotations
 import json
 import logging
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from pathlib import Path
 
 from typing import Any
+
+from utils.config import config
 
 
 class ForgeLogger:
@@ -33,11 +35,18 @@ class ForgeLogger:
 
     def __init__(
         self,
-        log_directory: str = "logs"
+        log_directory: str | Path | None = None
     ) -> None:
+        project_root = Path(__file__).resolve().parents[2]
 
-        self.log_directory = Path(
-            log_directory
+        configured_directory = Path(
+            log_directory or config.logs_directory
+        )
+
+        self.log_directory = (
+            configured_directory
+            if configured_directory.is_absolute()
+            else project_root / configured_directory
         )
 
         self.log_directory.mkdir(
@@ -70,7 +79,7 @@ class ForgeLogger:
         """
 
         logger = logging.getLogger(
-            name
+            f"{name}.{self.log_directory}"
         )
 
         logger.setLevel(
@@ -111,7 +120,7 @@ class ForgeLogger:
 
         payload = {
             "timestamp": (
-                datetime.utcnow()
+                datetime.now(UTC)
                 .isoformat()
             ),
             "event": event,
@@ -139,7 +148,7 @@ class ForgeLogger:
 
         payload = {
             "timestamp": (
-                datetime.utcnow()
+                datetime.now(UTC)
                 .isoformat()
             ),
             "event": event,

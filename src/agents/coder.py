@@ -25,6 +25,10 @@ class CodingAgent(BaseAgent):
 
     name = "coding-agent"
 
+    constitution_role = "coding"
+
+    schema_name = "implementation.json"
+
     PROMPT_TEMPLATE = """
 Ты Senior Software Engineer.
 
@@ -73,22 +77,19 @@ class CodingAgent(BaseAgent):
         implementation = {
             "id": f"IMPL-{context.task.id}",
             "task_id": context.task.id,
+            "architecture_decision_id": architecture["id"],
             "status": "completed",
             "summary": llm_response,
-            "used_components": architecture["components"],
-            "changed_files": [
-                {
-                    "path": "src/report/pdf_export.py",
-                    "action": "create"
-                },
-                {
-                    "path": "src/report/service.py",
-                    "action": "modify"
-                }
+            "used_components": architecture[
+                "affected_components"
             ],
-            "technical_risks": [
-                "Необходимо контролировать размер PDF.",
-                "Следует обработать ошибки генерации документа."
+            "changed_files": [],
+            "implementation_details": [
+                "Mock provider generated an implementation plan.",
+                "No project files were changed."
+            ],
+            "limitations": [
+                "The demo pipeline does not write application code."
             ]
         }
 

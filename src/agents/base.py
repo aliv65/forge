@@ -13,8 +13,15 @@ from typing import Any
 from orchestrator.context import ExecutionContext
 
 from providers.base import BaseProvider
+from providers.mock import MockProvider
 
 from utils.logger import ForgeLogger
+
+from validators.constitution_validator import ConstitutionValidator
+from validators.schema_validator import (
+    SchemaValidationError,
+    SchemaValidator,
+)
 
 
 @dataclass(slots=True)
@@ -74,16 +81,36 @@ class BaseAgent(ABC):
 
     name: str = "base-agent"
 
+    constitution_role: str = ""
+
+    schema_name: str | None = None
+
     def __init__(
         self,
         provider: BaseProvider,
-        logger: ForgeLogger
+        logger: ForgeLogger,
+        schema_validator: SchemaValidator | None = None,
+        constitution_validator: ConstitutionValidator | None = None
     ) -> None:
+
+        if not isinstance(provider, MockProvider):
+            raise TypeError(
+                "Forge supports MockProvider only."
+            )
 
         self.provider = provider
 
         self.logger = logger
 
+        self.schema_validator = (
+            schema_validator
+            or SchemaValidator()
+        )
+
+        self.constitution_validator = (
+            constitution_validator
+            or ConstitutionValidator()
+        )
 
     def run(
         self,
@@ -103,11 +130,33 @@ class BaseAgent(ABC):
 
         try:
 
+            agent_contract = (
+                self.constitution_validator
+                .check_agent_contract(
+                    self.constitution_role
+                )
+            )
+
+            if not agent_contract["registered"]:
+                return AgentResult.fail(
+                    f"Agent role is not registered: "
+                    f"{self.constitution_role}"
+                )
+
             result = self.execute(
                 context
             )
 
             if result.success:
+
+                if result.artifact is None:
+                    return AgentResult.fail(
+                        "Successful agent result has no artifact."
+                    )
+
+                self._validate_artifact(
+                    result.artifact
+                )
 
                 context.add_result(
                     self.name,
@@ -167,6 +216,39 @@ class BaseAgent(ABC):
         )
 
         return response.content
+
+    def commit(
+        self,
+        context: ExecutionContext
+    ) -> None:
+        """
+        Фиксирует отложенные изменения после успешного pipeline.
+        """
+
+    def _validate_artifact(
+        self,
+        artifact: dict[str, Any]
+    ) -> None:
+        """
+        Проверяет контракт и заявленный результат Constitution.
+        """
+
+        if self.schema_name:
+            self.schema_validator.validate(
+                artifact,
+                self.schema_name
+            )
+
+        constitution_result = (
+            self.constitution_validator.validate(
+                artifact
+            )
+        )
+
+        if not constitution_result["passed"]:
+            raise SchemaValidationError(
+                "Artifact failed Constitution validation."
+            )
 
 
     @abstractmethod

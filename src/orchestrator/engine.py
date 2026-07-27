@@ -6,7 +6,7 @@ Forge Orchestrator Engine.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from orchestrator.context import ExecutionContext
 from orchestrator.pipeline import Pipeline
@@ -57,7 +57,7 @@ class Orchestrator:
             {
                 "task_id": context.task.id,
                 "started_at": (
-                    datetime.utcnow()
+                    datetime.now(UTC)
                     .isoformat()
                 )
             }
@@ -116,6 +116,9 @@ class Orchestrator:
                 )
 
             context.mark_completed()
+
+            for agent in self.pipeline:
+                agent.commit(context)
 
             self.logger.log(
                 "pipeline_completed",

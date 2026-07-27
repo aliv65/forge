@@ -8,7 +8,7 @@ Execution Context.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from models.task import Task
@@ -36,7 +36,7 @@ class ExecutionContext:
     stage: str = "created"
 
     started_at: datetime = field(
-        default_factory=datetime.utcnow
+        default_factory=lambda: datetime.now(UTC)
     )
 
     metadata: dict[str, Any] = field(

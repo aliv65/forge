@@ -25,6 +25,10 @@ class ReviewAgent(BaseAgent):
 
     name = "review-agent"
 
+    constitution_role = "review"
+
+    schema_name = "review_report.json"
+
     PROMPT_TEMPLATE = """
 Ты Senior Software Engineer.
 
@@ -74,15 +78,25 @@ class ReviewAgent(BaseAgent):
 
         review_report = {
             "id": f"REVIEW-{context.task.id}",
-            "task_id": context.task.id,
+            "implementation_id": implementation["id"],
             "status": "approved",
             "summary": llm_response,
-            "findings": [],
-            "recommendations": [
-                "Добавить модульные тесты.",
-                "Обработать возможные ошибки ввода-вывода."
+            "violations": [],
+            "warnings": [
+                "The mock pipeline does not inspect source code."
             ],
-            "score": 9.2
+            "recommendations": [
+                "Use this result only as a mock pipeline demonstration."
+            ],
+            "constitution_check": {
+                "passed": True,
+                "checked_rules": []
+            },
+            "architecture_check": {
+                "passed": True,
+                "deviations": []
+            },
+            "conclusion": "Mock review approved the implementation plan."
         }
 
         return AgentResult.ok(

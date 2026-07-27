@@ -30,6 +30,10 @@ class ArchitectAgent(BaseAgent):
 
     name = "architect-agent"
 
+    constitution_role = "architecture"
+
+    schema_name = "architecture_decision.json"
+
     PROMPT_TEMPLATE = """
 Ты системный архитектор.
 
@@ -83,9 +87,7 @@ class ArchitectAgent(BaseAgent):
             )
 
         prompt = self.PROMPT_TEMPLATE.format(
-            specification=(
-                specification["summary"]
-            )
+            specification=specification["description"]
         )
 
         response = self.ask_llm(
@@ -100,20 +102,50 @@ class ArchitectAgent(BaseAgent):
                 f"ADR-{context.task.id}"
             ),
             "task_id": context.task.id,
+            "title": (
+                f"Architecture for {context.task.title}"
+            ),
             "summary": response,
-            "components": [
+            "affected_components": [
                 "API",
                 "Application Layer",
                 "Persistence Layer"
             ],
-            "constraints": (
-                specification["constraints"]
+            "changes": [
+                "Implement the approved task within existing boundaries."
+            ],
+            "rationale": (
+                "The mock pipeline preserves the current architecture."
             ),
-            "status": "accepted"
+            "risks": specification["open_questions"],
+            "constitution_check": {
+                "passed": True,
+                "violations": []
+            },
+            "status": "accepted",
         }
 
-        self.memory.save(
+        return AgentResult.ok(
             architecture_decision
+        )
+
+    def commit(
+        self,
+        context: ExecutionContext
+    ) -> None:
+        """
+        Сохраняет утвержденный ADR после полного успеха pipeline.
+        """
+
+        decision = context.get_result(
+            self.name
+        )
+
+        if decision is None:
+            return
+
+        file_path = self.memory.save(
+            decision
         )
 
         context.set_metadata(
@@ -121,6 +153,7 @@ class ArchitectAgent(BaseAgent):
             True
         )
 
-        return AgentResult.ok(
-            architecture_decision
+        context.set_metadata(
+            "architecture_memory_path",
+            str(file_path)
         )

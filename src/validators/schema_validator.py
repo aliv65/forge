@@ -5,9 +5,12 @@ Schema Validator.
 JSON Schema контрактам.
 """
 
-from pathlib import Path
-from typing import Dict, Any, List
 import json
+from pathlib import Path
+from typing import Any
+
+from jsonschema import Draft202012Validator
+from jsonschema.exceptions import ValidationError
 
 
 class SchemaValidationError(Exception):
@@ -35,16 +38,15 @@ class SchemaValidator:
 
     def __init__(
         self,
-        schema_path: str = "schemas"
-    ):
-        self.schema_path = Path(
-            schema_path
-        )
+        schema_path: str | Path | None = None
+    ) -> None:
+        project_root = Path(__file__).resolve().parents[2]
+        self.schema_path = Path(schema_path or project_root / "schemas")
 
     def load_schema(
         self,
         schema_name: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Загружает JSON Schema из файла.
         """
@@ -67,7 +69,7 @@ class SchemaValidator:
 
     def validate(
         self,
-        data: Dict[str, Any],
+        data: dict[str, Any],
         schema_name: str
     ) -> bool:
         """
@@ -78,32 +80,20 @@ class SchemaValidator:
             schema_name
         )
 
-        required_fields = schema.get(
-            "required",
-            []
-        )
-
-        missing_fields = [
-            field
-            for field in required_fields
-            if field not in data
-        ]
-
-        if missing_fields:
+        try:
+            Draft202012Validator(schema).validate(data)
+        except ValidationError as error:
             raise SchemaValidationError(
-                (
-                    "Missing required fields: "
-                    f"{missing_fields}"
-                )
-            )
+                error.message
+            ) from error
 
         return True
 
     def validate_with_report(
         self,
-        data: Dict[str, Any],
+        data: dict[str, Any],
         schema_name: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Возвращает подробный отчет проверки.
         """
