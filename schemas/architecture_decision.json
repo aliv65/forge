@@ -5,6 +5,7 @@
   "type": "object",
   "required": [
     "id",
+    "task_id",
     "title",
     "status",
     "summary",
@@ -21,6 +22,10 @@
       "examples": [
         "ADR-001"
       ]
+    },
+    "task_id": {
+      "type": "string",
+      "description": "Идентификатор исходной задачи."
     },
     "title": {
       "type": "string",
