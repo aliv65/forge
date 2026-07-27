@@ -46,9 +46,18 @@ class MockProvider(BaseProvider):
         response = self._generate_response(
             prompt
         )
+        prompt_tokens, completion_tokens = (
+            self._get_token_usage(prompt)
+        )
 
         return ProviderResponse(
             content=response,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            total_tokens=(
+                prompt_tokens
+                + completion_tokens
+            ),
             metadata={
                 "provider": self.name,
                 "mode": "mock",
@@ -83,20 +92,6 @@ class MockProvider(BaseProvider):
                 "System boundaries defined."
             )
 
-        if "code review" in prompt_lower:
-
-            return (
-                "Code review completed. "
-                "Implementation quality accepted."
-            )
-
-        if "senior software engineer" in prompt_lower:
-
-            return (
-                "Implementation plan generated. "
-                "Required code changes identified."
-            )
-
         if "qa engineer" in prompt_lower:
 
             return (
@@ -111,9 +106,51 @@ class MockProvider(BaseProvider):
                 "All pipeline stages completed."
             )
 
+        if "code review" in prompt_lower:
+
+            return (
+                "Code review completed. "
+                "Implementation quality accepted."
+            )
+
+        if "senior software engineer" in prompt_lower:
+
+            return (
+                "Implementation plan generated. "
+                "Required code changes identified."
+            )
+
         return (
             "Mock AI response generated."
         )
+
+    def _get_token_usage(
+        self,
+        prompt: str
+    ) -> tuple[int, int]:
+        """Returns deterministic token usage for each agent role."""
+
+        prompt_lower = prompt.lower()
+
+        if "product manager" in prompt_lower:
+            return 1200, 800
+
+        if "системный архитектор" in prompt_lower:
+            return 1000, 700
+
+        if "qa engineer" in prompt_lower:
+            return 600, 400
+
+        if "release manager" in prompt_lower:
+            return 400, 300
+
+        if "code review" in prompt_lower:
+            return 700, 500
+
+        if "senior software engineer" in prompt_lower:
+            return 1800, 1200
+
+        return 0, 0
 
     def reset(
         self

@@ -137,7 +137,7 @@ def main():
         )
 
         print(
-            result["release"]
+            result["analytics_report"]
         )
 
     else:

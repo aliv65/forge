@@ -10,6 +10,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any
 
+from analytics.token_usage import TokenUsage
+
 from orchestrator.context import ExecutionContext
 
 from providers.base import BaseProvider
@@ -112,6 +114,8 @@ class BaseAgent(ABC):
             or ConstitutionValidator()
         )
 
+        self.last_token_usage = TokenUsage()
+
     def run(
         self,
         context: ExecutionContext
@@ -213,6 +217,12 @@ class BaseAgent(ABC):
         response = self.provider.generate(
             prompt,
             context
+        )
+
+        self.last_token_usage = TokenUsage(
+            prompt_tokens=response.prompt_tokens,
+            completion_tokens=response.completion_tokens,
+            total_tokens=response.total_tokens
         )
 
         return response.content

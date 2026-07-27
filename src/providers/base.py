@@ -19,6 +19,12 @@ class ProviderResponse:
 
     content: str
 
+    prompt_tokens: int = 0
+
+    completion_tokens: int = 0
+
+    total_tokens: int = 0
+
     metadata: dict[str, Any] | None = None
 
 

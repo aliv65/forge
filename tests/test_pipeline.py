@@ -4,6 +4,9 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 
+from analytics.cost_calculator import CostCalculator
+from analytics.token_usage import TokenUsage
+
 from agents.architect import ArchitectAgent
 from agents.base import AgentResult
 from agents.coder import CodingAgent
@@ -107,6 +110,38 @@ class MockPipelineTests(unittest.TestCase):
             release["validation"]["checks_passed"]
         )
 
+        metrics = result["metrics"]
+        self.assertEqual(metrics["agents_count"], 6)
+        self.assertEqual(metrics["succeeded_agents"], 6)
+        self.assertEqual(metrics["failed_agents"], 0)
+        self.assertEqual(len(metrics["agent_metrics"]), 6)
+
+        analytics = result["analytics"]
+        self.assertEqual(analytics["total_prompt_tokens"], 5700)
+        self.assertEqual(
+            analytics["total_completion_tokens"],
+            3900
+        )
+        self.assertEqual(analytics["total_tokens"], 9600)
+        self.assertAlmostEqual(
+            analytics["total_estimated_cost"],
+            0.0405
+        )
+        self.assertEqual(analytics["artifacts_count"], 6)
+        self.assertEqual(analytics["errors_count"], 0)
+        self.assertEqual(
+            analytics["success_rate_percent"],
+            100.0
+        )
+        self.assertIn(
+            "Pipeline Summary",
+            result["analytics_report"]
+        )
+        self.assertIn(
+            "Forge Execution Report",
+            result["execution_report"]
+        )
+
         schemas = {
             "product-agent": "task.json",
             "architect-agent": "architecture_decision.json",
@@ -144,6 +179,9 @@ class MockPipelineTests(unittest.TestCase):
         self.assertEqual(result["status"], "failed")
         self.assertEqual(result["stage"], "product-agent")
         self.assertEqual(self.memory.count(), 0)
+        self.assertEqual(result["metrics"]["agents_count"], 1)
+        self.assertEqual(result["metrics"]["failed_agents"], 1)
+        self.assertEqual(result["analytics"]["errors_count"], 1)
 
     def test_schema_validator_rejects_unknown_properties(self) -> None:
         artifact = self.task.to_dict()
@@ -158,6 +196,24 @@ class MockPipelineTests(unittest.TestCase):
     def test_agents_reject_non_mock_providers(self) -> None:
         with self.assertRaises(TypeError):
             ProductAgent(object(), self.logger)
+
+    def test_mock_provider_token_usage_and_cost(self) -> None:
+        response = self.provider.generate(
+            "Ты Product Manager."
+        )
+        usage = TokenUsage(
+            prompt_tokens=response.prompt_tokens,
+            completion_tokens=response.completion_tokens,
+            total_tokens=response.total_tokens
+        )
+
+        self.assertEqual(usage.prompt_tokens, 1200)
+        self.assertEqual(usage.completion_tokens, 800)
+        self.assertEqual(usage.total_tokens, 2000)
+        self.assertAlmostEqual(
+            CostCalculator().calculate(usage),
+            0.0084
+        )
 
     def test_constitution_registers_pipeline_roles(self) -> None:
         validator = ConstitutionValidator()
